@@ -13,7 +13,7 @@ import com.example.ecom.service.ProductService;
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    @Autowired 
+    @Autowired
     private ProductRepository productRepository;
 
     @Override
@@ -32,5 +32,24 @@ public class ProductServiceImpl implements ProductService {
             throw new ResourceNotFoundException("No products found matching: " + keyword);
         }
         return products;
+    }
+
+    @Override
+    public Product addProduct(Product product) {
+ 
+        if (product.getName() == null || product.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Product name is required.");
+        }
+        if (product.getDescription() == null || product.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("Product description is required.");
+        }
+        if (product.getPrice() < 0) {
+            throw new IllegalArgumentException("Product price must be non-negative.");
+        }
+        if (product.getQuantity() <= 0) {
+            throw new IllegalArgumentException("Product quantity must be greater than 0.");
+        }
+
+        return productRepository.save(product);
     }
 }

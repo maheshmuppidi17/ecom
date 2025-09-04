@@ -14,6 +14,7 @@ public class KafkaProducer implements KafkaProducerService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+    
     @Override
     public void sendOrderEvent(Order order) {
         // Convert Order to OrderEvent DTO

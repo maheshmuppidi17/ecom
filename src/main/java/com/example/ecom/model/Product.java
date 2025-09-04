@@ -3,21 +3,18 @@ package com.example.ecom.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "products") // Optional if you want a separate collection
+@Document(collection = "products") 
 public class Product {
 
     @Id
-    private String id; // MongoDB ObjectId
-
+    private String id; 
     private String name;
     private String description;
     private double price;
     private int quantity;
 
-    // No-arg constructor
     public Product() {}
 
-    // Parameterized constructor
     public Product(String id, String name, String description, double price, int quantity) {
         this.id = id;
         this.name = name;
@@ -26,7 +23,6 @@ public class Product {
         this.quantity = quantity;
     }
 
-    // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

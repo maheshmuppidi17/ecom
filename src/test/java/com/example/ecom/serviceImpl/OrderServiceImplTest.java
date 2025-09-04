@@ -1,9 +1,12 @@
 package com.example.ecom.serviceImpl;
 
 import com.example.ecom.dto.FundTransferDTO;
-import com.example.ecom.kafka.KafkaProducer; // Add this import
+import com.example.ecom.exception.CartEmptyException;
+import com.example.ecom.exception.CartNotFoundException;
+import com.example.ecom.exception.PaymentFailedException;
 import com.example.ecom.kafka.KafkaProducerService;
 import com.example.ecom.model.Cart;
+import com.example.ecom.model.CartItem;
 import com.example.ecom.model.Order;
 import com.example.ecom.model.Product;
 import com.example.ecom.repo.CartRepository;
@@ -22,10 +25,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class) // Use this instead of MockitoAnnotations
+@ExtendWith(MockitoExtension.class)
 public class OrderServiceImplTest {
 
     @Mock
@@ -37,7 +40,7 @@ public class OrderServiceImplTest {
     @Mock
     private BankingClient bankingClient;
 
-    @Mock // Add this mock for KafkaProducer
+    @Mock
     private KafkaProducerService kafkaProducer;
 
     @InjectMocks
@@ -48,8 +51,6 @@ public class OrderServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        // Remove MockitoAnnotations.openMocks(this) when using @ExtendWith
-
         product = new Product();
         product.setId("testProductId");
         product.setName("Laptop");
@@ -58,7 +59,10 @@ public class OrderServiceImplTest {
         cart = new Cart();
         cart.setId("setCartId");
         cart.setUserId("testUserId");
-        cart.addProduct(product);
+
+        // Add product as a CartItem
+        CartItem item = new CartItem(product.getId(), product.getName(), product.getPrice(), 1);
+        cart.getItems().add(item);
     }
 
     @Test
@@ -79,18 +83,18 @@ public class OrderServiceImplTest {
         verify(bankingClient).transact(any(FundTransferDTO.class));
         verify(orderRepository).save(any(Order.class));
         verify(cartRepository).save(cart);
-        verify(kafkaProducer).sendOrderEvent(any(Order.class)); // Add this verification
+        verify(kafkaProducer).sendOrderEvent(any(Order.class));
     }
 
     @Test
     void testCheckout_CartNotFound() {
         when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.empty());
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        CartNotFoundException ex = assertThrows(CartNotFoundException.class,
                 () -> orderService.checkout("testUserId", "ACC123"));
         assertEquals("Cart not found for user testUserId", ex.getMessage());
-        
-        verify(kafkaProducer, never()).sendOrderEvent(any(Order.class)); // Add this
+
+        verify(kafkaProducer, never()).sendOrderEvent(any(Order.class));
     }
 
     @Test
@@ -98,11 +102,11 @@ public class OrderServiceImplTest {
         cart.clear();
         when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.of(cart));
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        CartEmptyException ex = assertThrows(CartEmptyException.class,
                 () -> orderService.checkout("testUserId", "ACC123"));
         assertEquals("Cart is empty for user testUserId", ex.getMessage());
-        
-        verify(kafkaProducer, never()).sendOrderEvent(any(Order.class)); // Add this
+
+        verify(kafkaProducer, never()).sendOrderEvent(any(Order.class));
     }
 
     @Test
@@ -111,11 +115,12 @@ public class OrderServiceImplTest {
         when(bankingClient.transact(any(FundTransferDTO.class)))
                 .thenReturn("Transaction failed: Insufficient balance");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        PaymentFailedException ex = assertThrows(PaymentFailedException.class,
                 () -> orderService.checkout("testUserId", "ACC123"));
         assertTrue(ex.getMessage().contains("Payment failed"));
+
         verify(orderRepository, never()).save(any(Order.class));
-        verify(kafkaProducer, never()).sendOrderEvent(any(Order.class)); // Add this
+        verify(kafkaProducer, never()).sendOrderEvent(any(Order.class));
     }
 
     @Test

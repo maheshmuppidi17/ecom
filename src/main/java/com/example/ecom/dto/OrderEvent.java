@@ -1,7 +1,7 @@
 package com.example.ecom.dto;
 
 import com.example.ecom.model.Order;
-import com.example.ecom.model.Product;
+import com.example.ecom.model.CartItem;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,26 +15,24 @@ public class OrderEvent {
     private LocalDateTime dateTime;
     private String status;
 
-    // Default constructor
     public OrderEvent() {}
 
-    // Conversion constructor from Order
     public OrderEvent(Order order) {
         this.id = order.getId();
         this.userId = order.getUserId();
         this.totalAmount = order.getTotalAmount();
         this.dateTime = order.getDateTime();
         this.status = "CREATED";
-        
-        // Convert Product objects to ProductEvent objects
-        if (order.getProducts() != null) {
-            this.products = order.getProducts().stream()
-                .map(ProductEvent::new)
-                .collect(Collectors.toList());
+
+        // Convert CartItem objects to ProductEvent objects
+        if (order.getItems() != null) {
+            this.products = order.getItems().stream()
+                    .map(ProductEvent::new)  // We'll fix ProductEvent next
+                    .collect(Collectors.toList());
         }
     }
 
-    // Getters and setters
+    // Getters & Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

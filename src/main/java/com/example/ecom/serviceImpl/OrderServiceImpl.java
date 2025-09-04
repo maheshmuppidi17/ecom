@@ -11,36 +11,37 @@ import com.example.ecom.dto.FundTransferDTO;
 import com.example.ecom.exception.CartEmptyException;
 import com.example.ecom.exception.CartNotFoundException;
 import com.example.ecom.exception.PaymentFailedException;
-
 import com.example.ecom.kafka.KafkaProducerService;
 import com.example.ecom.model.Cart;
+import com.example.ecom.model.CartItem;
 import com.example.ecom.model.Order;
 import com.example.ecom.repo.CartRepository;
 import com.example.ecom.repo.OrderRepository;
 import com.example.ecom.service.BankingClient;
 import com.example.ecom.service.OrderService;
+
 @Service
 public class OrderServiceImpl implements OrderService {
 
-    @Autowired 
+    @Autowired
     private CartRepository cartRepository;
 
-    @Autowired 
+    @Autowired
     private OrderRepository orderRepository;
 
-    @Autowired 
+    @Autowired
     private BankingClient bankingClient;
 
     @Autowired
-    private KafkaProducerService kafkaProducerService; // <-- Kafka producer to send order events
+    private KafkaProducerService kafkaProducerService;
 
     @Override
     public String checkout(String userId, String accountNumber) {
         // 1. Get user cart
         Cart cart = cartRepository.findByUserId(userId)
-            .orElseThrow(() -> new CartNotFoundException("Cart not found for user " + userId));
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user " + userId));
 
-        if (cart.getProducts() == null || cart.getProducts().isEmpty()) {
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
             throw new CartEmptyException("Cart is empty for user " + userId);
         }
 
@@ -58,25 +59,25 @@ public class OrderServiceImpl implements OrderService {
             throw new PaymentFailedException("Payment failed: " + response);
         }
 
-        // 4. Create order
+        // 4. Create order snapshot
         Order order = new Order();
         order.setUserId(userId);
         order.setDateTime(LocalDateTime.now());
         order.setTotalAmount(total);
-        order.setProducts(new ArrayList<>(cart.getProducts()));
+        order.setItems(new ArrayList<>(cart.getItems())); // save CartItem snapshot
 
         orderRepository.save(order);
 
-        // 5. Publish order event to Kafka for DeliveryService
+        // 5. Publish order event to Kafka
         kafkaProducerService.sendOrderEvent(order);
 
-        // 6. Clear cart
+        // 6. Clear cart (purchase finalized, no stock restoration)
         cart.clear();
         cartRepository.save(cart);
 
-        return "Order placed successfully! Order ID: " + order.getId() + 
+        return "Order placed successfully! Order ID: " + order.getId() +
                 "\nTotal Amount: ₹" + String.format("%.2f", total) +
-                "\n" + "Delivery processing taking longer than expected. You will receive updates shortly.";
+                "\nDelivery is being processed. You will receive updates shortly.";
     }
 
     @Override
@@ -85,5 +86,3 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findByUserIdAndDateTimeAfter(userId, fromDate);
     }
 }
-
-

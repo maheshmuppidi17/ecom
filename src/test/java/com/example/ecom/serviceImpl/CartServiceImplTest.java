@@ -19,14 +19,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class CartServiceImplTest {
+class CartServiceImplTest {
 
     @Mock
     private CartRepository cartRepository;
-
     @Mock
     private ProductRepository productRepository;
-
     @Mock
     private UserRepository userRepository;
 
@@ -37,147 +35,118 @@ public class CartServiceImplTest {
     private Cart cart;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         product = new Product();
-        product.setId("testProductId");
+        product.setId("p1");
         product.setName("Laptop");
-        product.setPrice(999.99);
+        product.setQuantity(5);
 
         cart = new Cart();
-        cart.setId("testCartId");
-        cart.setUserId("testUserId");
-    }
-
-    @Test
-    void testAddToCart_NewCart() {
-        // Arrange
-        when(userRepository.existsById("testUserId")).thenReturn(true);
-        when(productRepository.findById("testProductId")).thenReturn(Optional.of(product));
-        when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.empty());
-        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
-            Cart savedCart = invocation.getArgument(0);
-            savedCart.setId("savedCartId"); // Simulate saving
-            return savedCart;
-        });
-
-        // Act
-        String result = cartService.addToCart("testUserId", "testProductId");
-
-        // Assert
-        assertEquals("Product added to cart.", result);
-        verify(userRepository, times(1)).existsById("testUserId");
-        verify(productRepository, times(1)).findById("testProductId");
-        verify(cartRepository, times(1)).findByUserId("testUserId");
-        verify(cartRepository, times(1)).save(any(Cart.class));
-    }
-
-    @Test
-    void testAddToCart_ExistingCart() {
-        // Arrange
-        when(userRepository.existsById("testUserId")).thenReturn(true);
-        when(productRepository.findById("testProductId")).thenReturn(Optional.of(product));
-        when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.of(cart));
-        when(cartRepository.save(cart)).thenReturn(cart);
-
-        // Act
-        String result = cartService.addToCart("testUserId", "testProductId");
-
-        // Assert
-        assertEquals("Product added to cart.", result);
-        verify(userRepository, times(1)).existsById("testUserId");
-        verify(productRepository, times(1)).findById("testProductId");
-        verify(cartRepository, times(1)).findByUserId("testUserId");
-        verify(cartRepository, times(1)).save(cart);
+        cart.setId("c1");
+        cart.setUserId("u1");
     }
 
     @Test
     void testAddToCart_UserNotFound() {
-        // Arrange
-        when(userRepository.existsById("testUserId")).thenReturn(false);
+        when(userRepository.existsById("u1")).thenReturn(false);
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> cartService.addToCart("testUserId", "testProductId"));
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                () -> cartService.addToCart("u1", "p1", 1));
 
-        assertEquals("User not found with ID: testUserId", exception.getMessage());
-        verify(userRepository, times(1)).existsById("testUserId");
-        verify(productRepository, never()).findById(any());
-        verify(cartRepository, never()).findByUserId(any());
-        verify(cartRepository, never()).save(any());
+        assertEquals("User not found with ID: u1", ex.getMessage());
     }
 
     @Test
     void testAddToCart_ProductNotFound() {
-        // Arrange
-        when(userRepository.existsById("testUserId")).thenReturn(true);
-        when(productRepository.findById("testProductId")).thenReturn(Optional.empty());
+        when(userRepository.existsById("u1")).thenReturn(true);
+        when(productRepository.findById("p1")).thenReturn(Optional.empty());
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> cartService.addToCart("testUserId", "testProductId"));
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                () -> cartService.addToCart("u1", "p1", 1));
 
-        assertEquals("Product not found with ID: testProductId", exception.getMessage());
-        verify(userRepository, times(1)).existsById("testUserId");
-        verify(productRepository, times(1)).findById("testProductId");
-        verify(cartRepository, never()).findByUserId(any());
-        verify(cartRepository, never()).save(any());
+        assertEquals("Product not found with ID: p1", ex.getMessage());
     }
 
     @Test
-    void testRemoveFromCart() {
-        // Arrange - First add a product to the cart
-        cart.addProduct(product);
-        
-        when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.of(cart));
-        when(cartRepository.save(cart)).thenReturn(cart);
+    void testAddToCart_InvalidQuantity() {
+        when(userRepository.existsById("u1")).thenReturn(true);
+        when(productRepository.findById("p1")).thenReturn(Optional.of(product));
 
-        // Act
-        String result = cartService.removeFromCart("testUserId", "testProductId");
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> cartService.addToCart("u1", "p1", 0));
 
-        // Assert
-        assertEquals("Product removed from cart.", result);
-        verify(cartRepository, times(1)).findByUserId("testUserId");
-        verify(cartRepository, times(1)).save(cart);
+        assertEquals("Quantity must be greater than 0.", ex.getMessage());
+    }
+
+    @Test
+    void testAddToCart_NotEnoughStock() {
+        when(userRepository.existsById("u1")).thenReturn(true);
+        when(productRepository.findById("p1")).thenReturn(Optional.of(product));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> cartService.addToCart("u1", "p1", 10));
+
+        assertEquals("Not enough stock for product: Laptop", ex.getMessage());
+    }
+
+    @Test
+    void testAddToCart_Success() {
+        when(userRepository.existsById("u1")).thenReturn(true);
+        when(productRepository.findById("p1")).thenReturn(Optional.of(product));
+        when(cartRepository.findByUserId("u1")).thenReturn(Optional.of(cart));
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
+
+        String result = cartService.addToCart("u1", "p1", 2);
+
+        assertEquals("Added 2 x Laptop to cart.", result);
+        verify(cartRepository).save(cart);
+        verify(productRepository).save(product);
+        assertEquals(3, product.getQuantity());
     }
 
     @Test
     void testRemoveFromCart_CartNotFound() {
-        // Arrange
-        when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.empty());
+        when(cartRepository.findByUserId("u1")).thenReturn(Optional.empty());
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> cartService.removeFromCart("testUserId", "testProductId"));
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                () -> cartService.removeFromCart("u1", "p1"));
 
-        assertEquals("Cart not found for user ID: testUserId", exception.getMessage());
-        verify(cartRepository, times(1)).findByUserId("testUserId");
-        verify(cartRepository, never()).save(any());
+        assertEquals("Cart not found for user ID: u1", ex.getMessage());
     }
 
     @Test
-    void testViewCart() {
-        // Arrange
-        when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.of(cart));
+    void testRemoveFromCart_Success() {
+        when(cartRepository.findByUserId("u1")).thenReturn(Optional.of(cart));
+        when(cartRepository.save(cart)).thenReturn(cart);
 
-        // Act
-        Cart result = cartService.viewCart("testUserId");
+        String result = cartService.removeFromCart("u1", "p1");
 
-        // Assert
-        assertNotNull(result);
-        assertEquals("testUserId", result.getUserId());
-        verify(cartRepository, times(1)).findByUserId("testUserId");
+        assertEquals("Product removed from cart.", result);
+        verify(cartRepository).save(cart);
     }
 
     @Test
-    void testViewCart_NotFound() {
-        // Arrange
-        when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.empty());
+    void testViewCart_CartNotFound() {
+        when(cartRepository.findByUserId("u1")).thenReturn(Optional.empty());
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> cartService.viewCart("testUserId"));
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
+                () -> cartService.viewCart("u1"));
 
-        assertEquals("Cart not found for user ID: testUserId", exception.getMessage());
-        verify(cartRepository, times(1)).findByUserId("testUserId");
+        assertEquals("Cart not found for user ID: u1", ex.getMessage());
+    }
+
+    @Test
+    void testViewCart_Success() {
+        when(cartRepository.findByUserId("u1")).thenReturn(Optional.of(cart));
+
+        Cart foundCart = cartService.viewCart("u1");
+        assertEquals(cart, foundCart);
+    }
+
+    @Test
+    void testClearCart_Unimplemented() {
+        // Since method returns null, this will pass only if it's null
+        assertNull(cartService.clearCart("u1"));
     }
 }

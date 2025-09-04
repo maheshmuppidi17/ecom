@@ -1,72 +1,65 @@
 package com.example.ecom.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-@Document(collection = "carts")
 public class Cart {
+    private String id;
+    private String userId;
+    private List<CartItem> items = new ArrayList<>();
 
-    @Id
-    private String id; // MongoDB ObjectId
-
-    private String userId; // Link cart to user
-
-    private List<Product> products = new ArrayList<>();
-
-    // Constructors
     public Cart() {}
 
     public Cart(String userId) {
         this.userId = userId;
     }
 
-    // Add a product to cart
-    public void addProduct(Product product) {
-        products.add(product);
+    // Add product to cart
+    public void addProduct(Product product, int quantity) {
+        // Check if already exists
+        for (CartItem item : items) {
+            if (item.getProductId().equals(product.getId())) {
+                item.setQuantity(item.getQuantity() + quantity);
+                return;
+            }
+        }
+        // Add new item
+        CartItem newItem = new CartItem(product.getId(), product.getName(), product.getPrice(), quantity);
+        items.add(newItem);
     }
 
-    // Remove product by productId
+    // Remove product from cart
     public void removeProduct(String productId) {
-        products.removeIf(p -> p.getId().equals(productId));
+        Iterator<CartItem> iterator = items.iterator();
+        while (iterator.hasNext()) {
+            CartItem item = iterator.next();
+            if (item.getProductId().equals(productId)) {
+                iterator.remove();
+                break;
+            }
+        }
     }
 
-    // Clear all products
-    public void clear() {
-        products.clear();
-    }
-
-    // Calculate total price (taking quantity into account)
+    // Calculate total price
     public double calculateTotal() {
-        return products.stream()
-                       .mapToDouble(p -> p.getPrice() * p.getQuantity())
-                       .sum();
+        return items.stream()
+                .mapToDouble(i -> i.getPrice() * i.getQuantity())
+                .sum();
     }
 
-    // Getters and Setters
-    public String getId() {
-        return id;
+    // Clear cart
+    public void clear() {
+        items.clear();
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    // Getters/Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public String getUserId() {
-        return userId;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public List<Product> getProducts() {
-        return products;
-    }
-
-    public void setProducts(List<Product> products) {
-        this.products = products;
-    }
+    public List<CartItem> getItems() { return items; }
+    public void setItems(List<CartItem> items) { this.items = items; }
 }

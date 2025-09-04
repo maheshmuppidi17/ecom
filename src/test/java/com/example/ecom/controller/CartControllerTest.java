@@ -2,26 +2,21 @@ package com.example.ecom.controller;
 
 import com.example.ecom.contrller.CartController;
 import com.example.ecom.model.Cart;
-import com.example.ecom.model.Product;
+import com.example.ecom.model.CartItem;
 import com.example.ecom.service.CartService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.ResponseEntity;
 
-import java.util.ArrayList;
+import java.util.Collections;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 
-public class CartControllerTest {
-
-    private MockMvc mockMvc;
+class CartControllerTest {
 
     @Mock
     private CartService cartService;
@@ -32,71 +27,69 @@ public class CartControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(cartController).build();
     }
 
     @Test
-    void testAddToCart() throws Exception {
-        String userId = "testUserId";
-        String productId = "testProductId";
-        String responseMessage = "Item added successfully";
+    void testAddToCart() {
+        String userId = "testUser";
+        String productId = "prod1";
+        int quantity = 2;
+        String expectedResponse = "Added 2 x Test Product to cart.";
 
-        when(cartService.addToCart(userId, productId)).thenReturn(responseMessage);
+        when(cartService.addToCart(userId, productId, quantity)).thenReturn(expectedResponse);
 
-        mockMvc.perform(post("/api/cart/add")
-                        .param("userId", userId)
-                        .param("productId", productId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string(responseMessage));
+        ResponseEntity<String> response = cartController.addToCart(userId, productId, quantity);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(expectedResponse, response.getBody());
+        verify(cartService, times(1)).addToCart(userId, productId, quantity);
     }
 
     @Test
-    void testRemoveFromCart() throws Exception {
-        String userId = "testUserId";
-        String productId = "testProductId";
-        String responseMessage = "Item removed successfully";
+    void testRemoveFromCart() {
+        String userId = "testUser";
+        String productId = "prod1";
+        String expectedResponse = "Product removed from cart.";
 
-        when(cartService.removeFromCart(userId, productId)).thenReturn(responseMessage);
+        when(cartService.removeFromCart(userId, productId)).thenReturn(expectedResponse);
 
-        mockMvc.perform(delete("/api/cart/remove")
-                        .param("userId", userId)
-                        .param("productId", productId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().string(responseMessage));
+        ResponseEntity<String> response = cartController.removeFromCart(userId, productId);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(expectedResponse, response.getBody());
+        verify(cartService, times(1)).removeFromCart(userId, productId);
     }
 
     @Test
-    void testViewCart() throws Exception {
-        String userId = "testUserId";
-
-        // Prepare cart with String ID
+    void testViewCart() {
+        String userId = "testUser";
         Cart cart = new Cart();
-        cart.setId(userId);
+        cart.setId("cart1");
         cart.setUserId(userId);
-
-        // Add a sample product
-        Product product = new Product();
-        product.setId("prod1");
-        product.setName("Test Product");
-        product.setPrice(100);
-        product.setQuantity(1);
-
-        cart.setProducts(new ArrayList<>());
-        cart.getProducts().add(product);
+        cart.setItems(Collections.singletonList(
+                new CartItem("prod1", "Test Product", 100.0, 2)
+        ));
 
         when(cartService.viewCart(userId)).thenReturn(cart);
 
-        mockMvc.perform(get("/api/cart/view")
-                        .param("userId", userId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(userId))
-                .andExpect(jsonPath("$.userId").value(userId))
-                .andExpect(jsonPath("$.products[0].id").value("prod1"))
-                .andExpect(jsonPath("$.products[0].name").value("Test Product"))
-                .andExpect(jsonPath("$.products[0].price").value(100.0))
-                .andExpect(jsonPath("$.products[0].quantity").value(1));
+        ResponseEntity<Cart> response = cartController.viewCart(userId);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(cart, response.getBody());
+        verify(cartService, times(1)).viewCart(userId);
+    }
+
+    @Test
+    void testClearCart() {
+        String userId = "testUser";
+        String expectedResponse = "Cart cleared.";
+
+        when(cartService.clearCart(userId)).thenReturn(expectedResponse);
+
+        ResponseEntity<String> response = cartController.clearCart(userId);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(expectedResponse, response.getBody());
+        verify(cartService, times(1)).clearCart(userId);
     }
 }

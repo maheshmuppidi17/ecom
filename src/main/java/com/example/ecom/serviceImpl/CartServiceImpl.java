@@ -5,10 +5,12 @@ import org.springframework.stereotype.Service;
 
 import com.example.ecom.exception.ResourceNotFoundException;
 import com.example.ecom.model.Cart;
+import com.example.ecom.model.CartItem;
 import com.example.ecom.model.Product;
 import com.example.ecom.repo.CartRepository;
 import com.example.ecom.repo.ProductRepository;
 import com.example.ecom.repo.UserRepository;
+
 import com.example.ecom.service.CartService;
 
 @Service
@@ -16,20 +18,30 @@ public class CartServiceImpl implements CartService {
 
     @Autowired private CartRepository cartRepository;
     @Autowired private ProductRepository productRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
 
     @Override
-    public String addToCart(String userId, String productId) {
-        // Verify user exists
+    public String addToCart(String userId, String productId, int quantity) {
+        // Validate user
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found with ID: " + userId);
         }
 
-        // Verify product exists
+        // Get product
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
+
+        // Validate stock
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than 0.");
+        }
+        if (product.getQuantity() < quantity) {
+            throw new IllegalArgumentException("Not enough stock for product: " + product.getName());
+        }
+
+        // Deduct stock
+        product.setQuantity(product.getQuantity() - quantity);
+        productRepository.save(product);
 
         // Find or create cart
         Cart cart = cartRepository.findByUserId(userId).orElse(new Cart());
@@ -37,13 +49,12 @@ public class CartServiceImpl implements CartService {
             cart.setUserId(userId);
         }
 
-        cart.addProduct(product);
+        // Add product with quantity
+        cart.addProduct(product, quantity);
         cartRepository.save(cart);
 
-        return "Product added to cart.";
+        return "Added " + quantity + " x " + product.getName() + " to cart.";
     }
-
-
 
     @Override
     public String removeFromCart(String userId, String productId) {
@@ -60,4 +71,27 @@ public class CartServiceImpl implements CartService {
         return cartRepository.findByUserId(userId)
             .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user ID: " + userId));
     }
+
+    @Override
+    public String clearCart(String userId) {
+        // Find cart
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user ID: " + userId));
+
+        // Restore stock for all products
+        for (CartItem item : cart.getItems()) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + item.getProductId()));
+            product.setQuantity(product.getQuantity() + item.getQuantity());
+            productRepository.save(product);
+        }
+
+        // Clear cart items
+        cart.getItems().clear();
+        cartRepository.save(cart);
+
+        return "Cart cleared successfully.";
+    }
+
+
 }

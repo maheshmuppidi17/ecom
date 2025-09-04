@@ -17,7 +17,7 @@ public class KafkaProducer implements KafkaProducerService {
     
     @Override
     public void sendOrderEvent(Order order) {
-        // Convert Order to OrderEvent DTO
+       
         OrderEvent orderEvent = new OrderEvent(order);
         kafkaTemplate.send("order-events", orderEvent);
         System.out.println("Order event sent to Kafka: " + orderEvent.getId());

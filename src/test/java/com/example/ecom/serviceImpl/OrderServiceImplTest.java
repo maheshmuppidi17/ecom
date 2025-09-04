@@ -76,7 +76,7 @@ public class OrderServiceImplTest {
             return order;
         });
 
-        String response = orderService.checkout("testUserId", "ACC123");
+        String response = orderService.checkout("testUserId", "ACC123","OFFER10");
 
         assertTrue(response.contains("Order placed successfully"));
         verify(cartRepository).findByUserId("testUserId");
@@ -91,7 +91,7 @@ public class OrderServiceImplTest {
         when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.empty());
 
         CartNotFoundException ex = assertThrows(CartNotFoundException.class,
-                () -> orderService.checkout("testUserId", "ACC123"));
+                () -> orderService.checkout("testUserId", "ACC123","OFFER10"));
         assertEquals("Cart not found for user testUserId", ex.getMessage());
 
         verify(kafkaProducer, never()).sendOrderEvent(any(Order.class));
@@ -103,7 +103,7 @@ public class OrderServiceImplTest {
         when(cartRepository.findByUserId("testUserId")).thenReturn(Optional.of(cart));
 
         CartEmptyException ex = assertThrows(CartEmptyException.class,
-                () -> orderService.checkout("testUserId", "ACC123"));
+                () -> orderService.checkout("testUserId", "ACC123","OFFER10"));
         assertEquals("Cart is empty for user testUserId", ex.getMessage());
 
         verify(kafkaProducer, never()).sendOrderEvent(any(Order.class));
@@ -116,7 +116,7 @@ public class OrderServiceImplTest {
                 .thenReturn("Transaction failed: Insufficient balance");
 
         PaymentFailedException ex = assertThrows(PaymentFailedException.class,
-                () -> orderService.checkout("testUserId", "ACC123"));
+                () -> orderService.checkout("testUserId", "ACC123","OFFER10"));
         assertTrue(ex.getMessage().contains("Payment failed"));
 
         verify(orderRepository, never()).save(any(Order.class));

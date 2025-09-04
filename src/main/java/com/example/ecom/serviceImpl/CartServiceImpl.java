@@ -66,11 +66,11 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public String clearCart(String userId) {
-        // Find cart
+     
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user ID: " + userId));
 
-        // Restore stock for all products
+     
         for (CartItem item : cart.getItems()) {
             Product product = productRepository.findById(item.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + item.getId()));
@@ -78,7 +78,7 @@ public class CartServiceImpl implements CartService {
             productRepository.save(product);
         }
 
-        // Clear cart items
+       
         cart.getItems().clear();
         cartRepository.save(cart);
 

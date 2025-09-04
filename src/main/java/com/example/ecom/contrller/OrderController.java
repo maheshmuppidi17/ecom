@@ -16,8 +16,8 @@ public class OrderController {
     @Autowired private OrderService orderService;
 
     @PostMapping("/checkout")
-    public ResponseEntity<String> checkout(@RequestParam String  userId, @RequestParam String accountNumber) {
-        return ResponseEntity.ok(orderService.checkout(userId, accountNumber));
+    public ResponseEntity<String> checkout(@RequestParam String  userId, @RequestParam String accountNumber , @RequestParam String offerCode) {
+        return ResponseEntity.ok(orderService.checkout(userId, accountNumber,offerCode));
     }
 
     @GetMapping("/dashboard")

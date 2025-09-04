@@ -13,9 +13,8 @@ public class Order {
     private String userId;
     private LocalDateTime dateTime;
     private Double totalAmount;
-    private List<CartItem> items; // store a snapshot of items purchased
+    private List<CartItem> items; 
 
-    // Getters/Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

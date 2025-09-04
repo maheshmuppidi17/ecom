@@ -14,10 +14,12 @@ import com.example.ecom.exception.PaymentFailedException;
 import com.example.ecom.kafka.KafkaProducerService;
 import com.example.ecom.model.Cart;
 import com.example.ecom.model.CartItem;
+import com.example.ecom.model.Offer;
 import com.example.ecom.model.Order;
 import com.example.ecom.repo.CartRepository;
 import com.example.ecom.repo.OrderRepository;
 import com.example.ecom.service.BankingClient;
+import com.example.ecom.service.OfferService;
 import com.example.ecom.service.OrderService;
 
 @Service
@@ -34,10 +36,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private KafkaProducerService kafkaProducerService;
+    
+    @Autowired
+    private OfferService offerService;
 
     @Override
-    public String checkout(String userId, String accountNumber) {
-        // 1. Get user cart
+    public String checkout(String userId, String accountNumber,String offerCode) {
+        
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new CartNotFoundException("Cart not found for user " + userId));
 
@@ -46,32 +51,39 @@ public class OrderServiceImpl implements OrderService {
         }
 
         double total = cart.calculateTotal();
-
-        // 2. Prepare transfer request
+        if (offerCode != null && !offerCode.isEmpty()) {
+            Offer offer = offerService.getOfferByCode(offerCode);
+            double discount = (total * offer.getDiscountPercentage()) / 100.0;
+            total -= discount;
+        }
+        
+       
+        
         FundTransferDTO transferDTO = new FundTransferDTO();
         transferDTO.setFromAccount(accountNumber);
         transferDTO.setToAccount("ECOM123456"); // Merchant account
         transferDTO.setAmount(total);
 
-        // 3. Call Banking service
+       
         String response = bankingClient.transact(transferDTO);
         if (!response.toLowerCase().contains("successful")) {
             throw new PaymentFailedException("Payment failed: " + response);
         }
 
-        // 4. Create order snapshot
+        
         Order order = new Order();
         order.setUserId(userId);
         order.setDateTime(LocalDateTime.now());
         order.setTotalAmount(total);
         order.setItems(new ArrayList<>(cart.getItems())); // save CartItem snapshot
-
+        
+       
         orderRepository.save(order);
 
-        // 5. Publish order event to Kafka
+        
         kafkaProducerService.sendOrderEvent(order);
 
-        // 6. Clear cart (purchase finalized, no stock restoration)
+       
         cart.clear();
         cartRepository.save(cart);
 

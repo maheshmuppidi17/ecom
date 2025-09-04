@@ -20,68 +20,68 @@ import static org.mockito.Mockito.*;
 
 public class OrderControllerTest {
 
-    @Mock
-    private OrderService orderService;
+	@Mock
+	private OrderService orderService;
 
-    @InjectMocks
-    private OrderController orderController;
+	@InjectMocks
+	private OrderController orderController;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+	@BeforeEach
+	void setUp() {
+		MockitoAnnotations.openMocks(this);
+	}
 
-    @Test
-    void testCheckout_Success() {
-        String userId = "testUserId";
-        String accountNumber = "ACC12345";
-        String expectedResponse = "Order placed successfully. Order ID: order123";
+	@Test
+	void testCheckout_Success() {
+		String userId = "testUserId";
+		String accountNumber = "ACC12345";
+		String expectedResponse = "Order placed successfully. Order ID: order123";
+		String offerCode = "OFFER10";
+		when(orderService.checkout(userId, accountNumber, offerCode)).thenReturn(expectedResponse);
 
-        when(orderService.checkout(userId, accountNumber)).thenReturn(expectedResponse);
+		ResponseEntity<String> response = orderController.checkout(userId, accountNumber, offerCode);
 
-        ResponseEntity<String> response = orderController.checkout(userId, accountNumber);
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals(expectedResponse, response.getBody());
+		verify(orderService, times(1)).checkout(userId, accountNumber, offerCode);
+	}
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expectedResponse, response.getBody());
-        verify(orderService, times(1)).checkout(userId, accountNumber);
-    }
+	@Test
+	void testGetDashboard_WithOrders() {
+		String userId = "testUserId";
+		int months = 3;
 
-    @Test
-    void testGetDashboard_WithOrders() {
-        String userId = "testUserId";
-        int months = 3;
+		Order order1 = new Order();
+		order1.setId("order1");
+		order1.setUserId(userId);
 
-        Order order1 = new Order();
-        order1.setId("order1");
-        order1.setUserId(userId);
+		Order order2 = new Order();
+		order2.setId("order2");
+		order2.setUserId(userId);
 
-        Order order2 = new Order();
-        order2.setId("order2");
-        order2.setUserId(userId);
+		List<Order> mockOrders = Arrays.asList(order1, order2);
 
-        List<Order> mockOrders = Arrays.asList(order1, order2);
+		when(orderService.getUserOrders(userId, months)).thenReturn(mockOrders);
 
-        when(orderService.getUserOrders(userId, months)).thenReturn(mockOrders);
+		ResponseEntity<List<Order>> response = orderController.getDashboard(userId, months);
 
-        ResponseEntity<List<Order>> response = orderController.getDashboard(userId, months);
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals(2, response.getBody().size());
+		assertEquals(mockOrders, response.getBody());
+		verify(orderService, times(1)).getUserOrders(userId, months);
+	}
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(2, response.getBody().size());
-        assertEquals(mockOrders, response.getBody());
-        verify(orderService, times(1)).getUserOrders(userId, months);
-    }
+	@Test
+	void testGetDashboard_NoOrders() {
+		String userId = "testUserId";
+		int months = 6;
 
-    @Test
-    void testGetDashboard_NoOrders() {
-        String userId = "testUserId";
-        int months = 6;
+		when(orderService.getUserOrders(userId, months)).thenReturn(Collections.emptyList());
 
-        when(orderService.getUserOrders(userId, months)).thenReturn(Collections.emptyList());
+		ResponseEntity<List<Order>> response = orderController.getDashboard(userId, months);
 
-        ResponseEntity<List<Order>> response = orderController.getDashboard(userId, months);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(0, response.getBody().size());
-        verify(orderService, times(1)).getUserOrders(userId, months);
-    }
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals(0, response.getBody().size());
+		verify(orderService, times(1)).getUserOrders(userId, months);
+	}
 }

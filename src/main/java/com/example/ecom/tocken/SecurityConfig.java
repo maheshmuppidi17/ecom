@@ -29,14 +29,15 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                		"/api/users/register",
-                	    "/api/users/login",
-                	    "/api/products/**",
-                	    "/api/cart/**",
-                	    "/api/orders/**",// ✅ Allow all product endpoints
-                	    "/swagger-ui.html",
-                	    "/swagger-ui/**",
-                	    "/v3/api-docs/**"
+                        "/api/users/register",
+                        "/api/users/login",
+                        "/api/products/**",
+                        "/api/cart/**",
+                        "/api/orders/**",
+                        "/api/offers/**",          // ✅ Added to allow all offers endpoints
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

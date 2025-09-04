@@ -11,7 +11,6 @@ public class ProductEvent {
 
     public ProductEvent() {}
 
-    // Conversion constructor from CartItem
     public ProductEvent(CartItem item) {
         this.id = item.getId();
         this.name = item.getName();
@@ -20,7 +19,6 @@ public class ProductEvent {
         this.description=item.getDescription();
     }
 
-    // Getters & Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

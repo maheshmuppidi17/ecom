@@ -31,21 +31,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
             String path = request.getRequestURI();
 
-            // Skip JWT validation for public endpoints
+            
             if (path.equals("/api/products/all") ||
                 path.equals("/api/users/register") ||
                 path.equals("/api/users/login") ||
                 path.startsWith("/swagger-ui") ||
                 path.startsWith("/v3/api-docs")) {
                 filterChain.doFilter(request, response);
-                return; // skip JWT validation
+                return; 
             }
 
             String authHeader = request.getHeader("Authorization");
             String token = null;
             String username = null;
 
-            // Extract token from header
+            
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
                 try {
@@ -55,7 +55,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
 
-            // Validate and set Authentication
+          
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 

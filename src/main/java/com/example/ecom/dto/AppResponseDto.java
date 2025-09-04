@@ -6,7 +6,7 @@ public class AppResponseDto {
 	private String message;
 	private Object data;
 	public AppResponseDto() {
-		// TODO Auto-generated constructor stub
+		
 	}
 	
 	public AppResponseDto(int statusCode, String message, Object data) {

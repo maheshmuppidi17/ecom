@@ -15,21 +15,20 @@ public class Cart {
         this.userId = userId;
     }
 
-    // Add product to cart
     public void addProduct(Product product, int quantity) {
-        // Check if already exists
+
         for (CartItem item : items) {
             if (item.getId().equals(product.getId())) {
                 item.setQuantity(item.getQuantity() + quantity);
                 return;
             }
         }
-        // Add new item
+
         CartItem newItem = new CartItem(product.getId(), product.getName(),product.getDescription() , product.getPrice(), quantity);
         items.add(newItem);
     }
 
-    // Remove product from cart
+
     public void removeProduct(String productId) {
         Iterator<CartItem> iterator = items.iterator();
         while (iterator.hasNext()) {

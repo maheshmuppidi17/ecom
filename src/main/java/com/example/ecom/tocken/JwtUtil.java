@@ -18,7 +18,7 @@ import java.security.Key;
 @Component
 public class JwtUtil {
 
-    // Minimum 32 chars for HS256
+
     private final String SECRET_KEY = "mysupersecretkeymysupersecretkey12345";
 
     private Key getSigningKey() {

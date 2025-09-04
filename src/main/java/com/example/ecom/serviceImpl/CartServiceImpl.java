@@ -22,16 +22,11 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public String addToCart(String userId, String productId, int quantity) {
-        // Validate user
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found with ID: " + userId);
         }
-
-        // Get product
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productId));
-
-        // Validate stock
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than 0.");
         }
@@ -39,17 +34,14 @@ public class CartServiceImpl implements CartService {
             throw new IllegalArgumentException("Not enough stock for product: " + product.getName());
         }
 
-        // Deduct stock
         product.setQuantity(product.getQuantity() - quantity);
         productRepository.save(product);
 
-        // Find or create cart
         Cart cart = cartRepository.findByUserId(userId).orElse(new Cart());
         if (cart.getUserId() == null) {
             cart.setUserId(userId);
         }
 
-        // Add product with quantity
         cart.addProduct(product, quantity);
         cartRepository.save(cart);
 
@@ -80,8 +72,8 @@ public class CartServiceImpl implements CartService {
 
         // Restore stock for all products
         for (CartItem item : cart.getItems()) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + item.getProductId()));
+            Product product = productRepository.findById(item.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + item.getId()));
             product.setQuantity(product.getQuantity() + item.getQuantity());
             productRepository.save(product);
         }

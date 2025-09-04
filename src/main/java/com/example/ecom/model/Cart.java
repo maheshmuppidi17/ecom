@@ -19,13 +19,13 @@ public class Cart {
     public void addProduct(Product product, int quantity) {
         // Check if already exists
         for (CartItem item : items) {
-            if (item.getProductId().equals(product.getId())) {
+            if (item.getId().equals(product.getId())) {
                 item.setQuantity(item.getQuantity() + quantity);
                 return;
             }
         }
         // Add new item
-        CartItem newItem = new CartItem(product.getId(), product.getName(), product.getPrice(), quantity);
+        CartItem newItem = new CartItem(product.getId(), product.getName(),product.getDescription() , product.getPrice(), quantity);
         items.add(newItem);
     }
 
@@ -34,7 +34,7 @@ public class Cart {
         Iterator<CartItem> iterator = items.iterator();
         while (iterator.hasNext()) {
             CartItem item = iterator.next();
-            if (item.getProductId().equals(productId)) {
+            if (item.getId().equals(productId)) {
                 iterator.remove();
                 break;
             }

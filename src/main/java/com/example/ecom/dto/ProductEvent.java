@@ -3,24 +3,26 @@ package com.example.ecom.dto;
 import com.example.ecom.model.CartItem;
 
 public class ProductEvent {
-    private String productId;
+    private String id;
     private String name;
     private Double price;
+    private String description;
     private Integer quantity;
 
     public ProductEvent() {}
 
     // Conversion constructor from CartItem
     public ProductEvent(CartItem item) {
-        this.productId = item.getProductId();
+        this.id = item.getId();
         this.name = item.getName();
         this.price = item.getPrice();
         this.quantity = item.getQuantity();
+        this.description=item.getDescription();
     }
 
     // Getters & Setters
-    public String getProductId() { return productId; }
-    public void setProductId(String productId) { this.productId = productId; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -30,4 +32,13 @@ public class ProductEvent {
 
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+    
 }

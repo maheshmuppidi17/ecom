@@ -67,7 +67,7 @@ class CartControllerTest {
         cart.setId("cart1");
         cart.setUserId(userId);
         cart.setItems(Collections.singletonList(
-                new CartItem("prod1", "Test Product", 100.0, 2)
+                new CartItem("prod1", "Test Product", "test", 100.0, 2)
         ));
 
         when(cartService.viewCart(userId)).thenReturn(cart);

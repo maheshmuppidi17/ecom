@@ -61,7 +61,7 @@ public class OrderServiceImplTest {
         cart.setUserId("testUserId");
 
         // Add product as a CartItem
-        CartItem item = new CartItem(product.getId(), product.getName(), product.getPrice(), 1);
+        CartItem item = new CartItem(product.getId(), product.getName(),product.getDescription(), product.getPrice(), 1);
         cart.getItems().add(item);
     }
 
